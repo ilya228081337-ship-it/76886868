@@ -43,7 +43,7 @@ export class AudioEngine {
     this.reverbGain.gain.value = 0;
 
     this.voiceGain = this.context.createGain();
-    this.voiceGain.gain.value = 1;
+    this.voiceGain.gain.value = 1.5;
 
     this.voiceDestination = this.context.createMediaStreamDestination();
     this.beatDestination = this.context.createMediaStreamDestination();
@@ -184,14 +184,34 @@ export class AudioEngine {
 
   async startRecording(): Promise<void> {
     try {
-      this.voiceStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      this.voiceStream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false
+        }
+      });
 
       const source = this.context.createMediaStreamSource(this.voiceStream);
       source.connect(this.voiceGain);
 
       const mixedStream = this.voiceDestination.stream;
 
-      this.mediaRecorder = new MediaRecorder(mixedStream);
+      const mimeType = 'audio/webm;codecs=opus';
+      const options: MediaRecorderOptions = {
+        mimeType,
+        audioBitsPerSecond: 256000
+      };
+
+      if (!MediaRecorder.isTypeSupported(mimeType)) {
+        const fallbackOptions: MediaRecorderOptions = {
+          audioBitsPerSecond: 256000
+        };
+        this.mediaRecorder = new MediaRecorder(mixedStream, fallbackOptions);
+      } else {
+        this.mediaRecorder = new MediaRecorder(mixedStream, options);
+      }
+
       this.recordedChunks = [];
 
       this.mediaRecorder.ondataavailable = (event) => {
@@ -236,7 +256,21 @@ export class AudioEngine {
     if (this.beatRecorder) return;
 
     this.beatChunks = [];
-    this.beatRecorder = new MediaRecorder(this.beatDestination.stream);
+
+    const mimeType = 'audio/webm;codecs=opus';
+    const options: MediaRecorderOptions = {
+      mimeType,
+      audioBitsPerSecond: 256000
+    };
+
+    if (!MediaRecorder.isTypeSupported(mimeType)) {
+      const fallbackOptions: MediaRecorderOptions = {
+        audioBitsPerSecond: 256000
+      };
+      this.beatRecorder = new MediaRecorder(this.beatDestination.stream, fallbackOptions);
+    } else {
+      this.beatRecorder = new MediaRecorder(this.beatDestination.stream, options);
+    }
 
     this.beatRecorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
