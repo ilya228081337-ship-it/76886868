@@ -25,7 +25,7 @@ export default function App() {
   const [beatRecordingTime, setBeatRecordingTime] = useState(0);
   const [recordingDuration, setRecordingDuration] = useState(30);
   const [recordedBeat, setRecordedBeat] = useState<Blob | null>(null);
-  const beatRecordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const beatRecordingIntervalRef = useRef<number | null>(null);
 
   const initializeAudio = async () => {
     if (audioEngineRef.current) return;
@@ -41,6 +41,10 @@ export default function App() {
         { id: 'snare', name: 'Snare' },
         { id: 'hihat', name: 'Hi-Hat' },
         { id: 'bass', name: 'Bass Line' },
+        { id: 'clap', name: 'Clap' },
+        { id: 'rim', name: 'Rim Shot' },
+        { id: 'perc', name: 'Percussion' },
+        { id: 'synth', name: 'Synth Pad' },
       ];
 
       for (const loop of loopData) {
@@ -266,7 +270,7 @@ export default function App() {
             <>
               <Container header={<Header variant="h2">Audio Loops</Header>}>
                 <SpaceBetween size="l">
-                  <ColumnLayout columns={2}>
+                  <ColumnLayout columns={4}>
                     {loops.map(loop => (
                       <SpaceBetween key={loop.id} size="xs">
                         <Box variant="strong">{loop.name}</Box>
@@ -340,13 +344,59 @@ export default function App() {
                 </SpaceBetween>
               </Container>
 
-              <Container header={<Header variant="h2">Export</Header>}>
+              <Container header={<Header variant="h2">Beat Recording</Header>}>
                 <SpaceBetween size="m">
-                  <Button onClick={downloadBeat}>Download Beat</Button>
+                  <Box variant="p">
+                    Record the beat mix. Set duration and click Start Recording.
+                  </Box>
+
+                  <SpaceBetween size="xs">
+                    <Box variant="strong">Recording Duration (seconds)</Box>
+                    <Slider
+                      value={recordingDuration}
+                      onChange={({ detail }) => setRecordingDuration(detail.value)}
+                      min={5}
+                      max={120}
+                      step={5}
+                    />
+                  </SpaceBetween>
+
+                  {!isBeatRecording ? (
+                    <Button variant="primary" onClick={startBeatRecording}>
+                      Start Beat Recording
+                    </Button>
+                  ) : (
+                    <>
+                      <StatusIndicator type="in-progress">
+                        Recording... {beatRecordingTime}s / {recordingDuration}s
+                      </StatusIndicator>
+                      <Button onClick={stopBeatRecording}>Stop Recording</Button>
+                    </>
+                  )}
+
+                  {recordedBeat && (
+                    <>
+                      <StatusIndicator type="success">Beat recorded successfully</StatusIndicator>
+                      <Button onClick={downloadBeat}>Download Beat</Button>
+                    </>
+                  )}
+                </SpaceBetween>
+              </Container>
+
+              <Container header={<Header variant="h2">Export Voice</Header>}>
+                <SpaceBetween size="m">
+                  <Box variant="p">
+                    Download your voice recording (without beat in the file).
+                  </Box>
                   {recordedBlob && (
                     <Button onClick={downloadVoiceWithBeat}>
-                      Download Voice with Beat
+                      Download Voice Recording
                     </Button>
+                  )}
+                  {!recordedBlob && (
+                    <Box variant="p" color="text-status-inactive">
+                      No voice recording available
+                    </Box>
                   )}
                 </SpaceBetween>
               </Container>

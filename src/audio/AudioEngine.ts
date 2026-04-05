@@ -247,8 +247,8 @@ export class AudioEngine {
     this.beatRecorder.start();
   }
 
-  stopBeatRecording(): Blob | null {
-    if (!this.beatRecorder) return null;
+  stopBeatRecording(): Promise<Blob | null> {
+    if (!this.beatRecorder) return Promise.resolve(null);
 
     return new Promise((resolve) => {
       if (!this.beatRecorder) {
@@ -264,7 +264,7 @@ export class AudioEngine {
       };
 
       this.beatRecorder.stop();
-    }) as any;
+    });
   }
 
   async exportBeat(): Promise<Blob> {
